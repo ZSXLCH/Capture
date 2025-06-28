@@ -6,20 +6,169 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1200</width>
+    <height>800</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>网络协议分析器</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <layout class="QHBoxLayout" name="topControlLayout">
+      <item>
+       <widget class="QLabel" name="labelAdapter">
+        <property name="text">
+         <string>网卡选择:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboAdapter"/>
+      </item>
+      <item>
+       <widget class="QLabel" name="labelMode">
+        <property name="text">
+         <string>模式:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radioDirect">
+        <property name="text">
+         <string>直接</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QRadioButton" name="radioPromiscuous">
+        <property name="text">
+         <string>混杂</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="editFilterExpr">
+        <property name="placeholderText">
+         <string>请输入过滤表达式，如 ip and tcp and port 80</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnApplyFilter">
+        <property name="text">
+         <string>应用过滤</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnStart">
+        <property name="text">
+         <string>开始</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnStop">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>停止</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Orientation::Vertical</enum>
+      </property>
+      <widget class="QTableWidget" name="tablePackets">
+       <column>
+        <property name="text">
+         <string>时间</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>源MAC</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>目的MAC</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>类型</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>源IP</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>目的IP</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>协议</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>源端口</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>目的端口</string>
+        </property>
+       </column>
+      </widget>
+      <widget class="QSplitter" name="splitterDetails">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <widget class="QTreeWidget" name="treeProtocol">
+        <column>
+         <property name="text">
+          <string/>
+         </property>
+        </column>
+       </widget>
+       <widget class="QWidget" name="widgetHexView">
+        <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QTextEdit" name="textHexData">
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1200</width>
      <height>22</height>
     </rect>
    </property>
