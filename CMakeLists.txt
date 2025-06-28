@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.16)
 
 project(Capture VERSION 0.1 LANGUAGES CXX)
 
+# Qt基础配置
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -19,34 +19,44 @@ set(PROJECT_SOURCES
         mainwindow.ui
 )
 
+# 可执行文件配置
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(Capture
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
     )
-# Define target properties for Android with Qt 6 as:
-#    set_property(TARGET Capture APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
-#                 ${CMAKE_CURRENT_SOURCE_DIR}/android)
-# For more information, see https://doc.qt.io/qt-6/qt-add-executable.html#target-creation
 else()
-    if(ANDROID)
-        add_library(Capture SHARED
-            ${PROJECT_SOURCES}
-        )
-# Define properties for Android with Qt 5 after find_package() calls as:
-#    set(ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/android")
-    else()
-        add_executable(Capture
-            ${PROJECT_SOURCES}
-        )
-    endif()
+    add_executable(Capture ${PROJECT_SOURCES})
 endif()
 
-target_link_libraries(Capture PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+# === WinPcap 配置 ===
+# 设置WinPcap路径（根据实际情况修改）
+set(WINPCAP_DIR "D:/WpdPack")
+set(WINPCAP_ARCH "x64")  # 或 "x86"，根据你的平台选择
+set(WINPCAP_INCLUDE_DIR "${WINPCAP_DIR}/Include")
+set(WINPCAP_LIB_DIR "${WINPCAP_DIR}/Lib/${WINPCAP_ARCH}")
 
-# Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
-# If you are developing for iOS or macOS you should consider setting an
-# explicit, fixed bundle identifier manually though.
+# 包含头文件目录
+include_directories(${WINPCAP_INCLUDE_DIR})
+
+# 查找WinPcap库（使用变量避免硬编码路径）
+find_library(WPCAP_LIB NAMES wpcap PATHS ${WINPCAP_LIB_DIR})
+find_library(PACKET_LIB NAMES packet PATHS ${WINPCAP_LIB_DIR})
+
+# 打印库路径用于调试
+message(STATUS "WinPcap库路径: ${WPCAP_LIB}")
+message(STATUS "Packet库路径: ${PACKET_LIB}")
+
+# 链接库（关键：调整链接顺序，将WinPcap库放在Qt库之前）
+target_link_libraries(Capture PRIVATE
+    ${WPCAP_LIB}       # WinPcap核心库
+    ${PACKET_LIB}      # 数据包处理库
+    ws2_32             # Windows套接字库
+    iphlpapi           # IP helper库
+    Qt${QT_VERSION_MAJOR}::Widgets  # Qt库放在最后
+)
+
+# 其他配置（保持不变）
 if(${QT_VERSION} VERSION_LESS 6.1.0)
   set(BUNDLE_ID_OPTION MACOSX_BUNDLE_GUI_IDENTIFIER com.example.Capture)
 endif()
