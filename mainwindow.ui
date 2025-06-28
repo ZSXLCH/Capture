@@ -16,80 +16,80 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <layout class="QHBoxLayout" name="topControlLayout">
+     <layout class="QHBoxLayout" name="filterLayout">
       <item>
-       <widget class="QLabel" name="labelAdapter">
+       <widget class="QLabel" name="labelDevice">
         <property name="text">
-         <string>网卡选择:</string>
+         <string>网卡:</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QComboBox" name="comboAdapter"/>
+       <widget class="QComboBox" name="deviceCombo"/>
       </item>
       <item>
-       <widget class="QLabel" name="labelMode">
-        <property name="text">
-         <string>模式:</string>
-        </property>
-       </widget>
+       <widget class="QComboBox" name="modeCombo"/>
       </item>
       <item>
-       <widget class="QRadioButton" name="radioDirect">
-        <property name="text">
-         <string>直接</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="radioPromiscuous">
-        <property name="text">
-         <string>混杂</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLineEdit" name="editFilterExpr">
+       <widget class="QLineEdit" name="macFilterEdit">
         <property name="placeholderText">
-         <string>请输入过滤表达式</string>
+         <string>MAC过滤</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btnApplyFilter">
-        <property name="text">
-         <string>应用过滤</string>
+       <widget class="QLineEdit" name="ethTypeFilterEdit">
+        <property name="placeholderText">
+         <string>类型过滤</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btnStart">
+       <widget class="QLineEdit" name="ipFilterEdit">
+        <property name="placeholderText">
+         <string>IP过滤</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="protoFilterEdit">
+        <property name="placeholderText">
+         <string>协议过滤</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="portFilterEdit">
+        <property name="placeholderText">
+         <string>端口过滤</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="startBtn">
         <property name="text">
          <string>开始</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="btnStop">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+       <widget class="QPushButton" name="stopBtn">
         <property name="text">
          <string>停止</string>
+        </property>
+        <property name="enabled">
+         <bool>false</bool>
         </property>
        </widget>
       </item>
      </layout>
     </item>
     <item>
-     <widget class="QSplitter" name="mainSplitter">
+     <widget class="QSplitter" name="verticalSplitter">
       <property name="orientation">
-       <enum>Qt::Orientation::Vertical</enum>
+       <enum>Qt::Vertical</enum>
       </property>
-      <widget class="QTableWidget" name="tablePackets">
+      <widget class="QTableWidget" name="packetTable">
        <column>
         <property name="text">
          <string>时间</string>
@@ -127,36 +127,23 @@
        </column>
        <column>
         <property name="text">
-         <string>源端口</string>
-        </property>
-       </column>
-       <column>
-        <property name="text">
-         <string>目的端口</string>
+         <string>长度</string>
         </property>
        </column>
       </widget>
-      <widget class="QSplitter" name="splitterDetails">
+      <widget class="QSplitter" name="horizontalSplitter">
        <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
+        <enum>Qt::Horizontal</enum>
        </property>
-       <widget class="QTreeWidget" name="treeProtocol">
-        <column>
-         <property name="text">
-          <string/>
-         </property>
-        </column>
+       <widget class="QTreeWidget" name="protocolTree">
+        <property name="headerLabel">
+         <string>协议解析树</string>
+        </property>
        </widget>
-       <widget class="QWidget" name="widgetHexView">
-        <layout class="QVBoxLayout" name="verticalLayout_2">
-         <item>
-          <widget class="QTextEdit" name="textHexData">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
+       <widget class="QPlainTextEdit" name="rawDataEdit">
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
        </widget>
       </widget>
      </widget>
