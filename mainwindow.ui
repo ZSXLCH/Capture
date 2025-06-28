@@ -54,7 +54,7 @@
       <item>
        <widget class="QLineEdit" name="editFilterExpr">
         <property name="placeholderText">
-         <string>请输入过滤表达式，如 ip and tcp and port 80</string>
+         <string>请输入过滤表达式</string>
         </property>
        </widget>
       </item>
