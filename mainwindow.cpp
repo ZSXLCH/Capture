@@ -91,29 +91,32 @@ MainWindow::MainWindow(QWidget *parent)
     , captureThread(nullptr)
 {
     ui->setupUi(this);
-    setupUI();
 
     // 设备列表
     char errbuf[PCAP_ERRBUF_SIZE] = {0};
     pcap_if_t *alldevs;
     if (pcap_findalldevs(&alldevs, errbuf) == 0) {
         for (pcap_if_t *d = alldevs; d; d = d->next) {
-            deviceCombo->addItem(QString::fromUtf8(d->name));
+            ui->deviceCombo->addItem(QString::fromUtf8(d->name));
         }
         pcap_freealldevs(alldevs);
     }
-    modeCombo->addItem("混杂模式");
-    modeCombo->addItem("直接模式");
+    ui->modeCombo->addItem("混杂模式");
+    ui->modeCombo->addItem("直接模式");
 
-    connect(startBtn, &QPushButton::clicked, this, &MainWindow::onStartCapture);
-    connect(stopBtn, &QPushButton::clicked, this, &MainWindow::onStopCapture);
-    connect(packetTable, &QTableWidget::cellClicked, this, &MainWindow::onPacketTableClicked);
-    connect(macFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
-    connect(ethTypeFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
-    connect(ipFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
-    connect(protoFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
-    connect(portFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
-    stopBtn->setEnabled(false);
+    connect(ui->startBtn, &QPushButton::clicked, this, &MainWindow::onStartCapture);
+    connect(ui->stopBtn, &QPushButton::clicked, this, &MainWindow::onStopCapture);
+    connect(ui->packetTable, &QTableWidget::cellClicked, this, &MainWindow::onPacketTableClicked);
+    connect(ui->macFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
+    connect(ui->ethTypeFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
+    connect(ui->ipFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
+    connect(ui->protoFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
+    connect(ui->portFilterEdit, &QLineEdit::editingFinished, this, &MainWindow::onFilterChanged);
+    ui->stopBtn->setEnabled(false);
+
+    // 设置表头自适应
+    ui->packetTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->packetTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 MainWindow::~MainWindow() {
@@ -125,52 +128,6 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-void MainWindow::setupUI() {
-    QWidget *central = new QWidget(this);
-    QVBoxLayout *mainLayout = new QVBoxLayout(central);
-    // 顶部过滤区
-    QHBoxLayout *filterLayout = new QHBoxLayout();
-    deviceCombo = new QComboBox(this);
-    modeCombo = new QComboBox(this);
-    macFilterEdit = new QLineEdit(this); macFilterEdit->setPlaceholderText("MAC过滤");
-    ethTypeFilterEdit = new QLineEdit(this); ethTypeFilterEdit->setPlaceholderText("类型过滤");
-    ipFilterEdit = new QLineEdit(this); ipFilterEdit->setPlaceholderText("IP过滤");
-    protoFilterEdit = new QLineEdit(this); protoFilterEdit->setPlaceholderText("协议过滤");
-    portFilterEdit = new QLineEdit(this); portFilterEdit->setPlaceholderText("端口过滤");
-    startBtn = new QPushButton("开始", this);
-    stopBtn = new QPushButton("停止", this);
-    filterLayout->addWidget(new QLabel("网卡:"));
-    filterLayout->addWidget(deviceCombo);
-    filterLayout->addWidget(modeCombo);
-    filterLayout->addWidget(macFilterEdit);
-    filterLayout->addWidget(ethTypeFilterEdit);
-    filterLayout->addWidget(ipFilterEdit);
-    filterLayout->addWidget(protoFilterEdit);
-    filterLayout->addWidget(portFilterEdit);
-    filterLayout->addWidget(startBtn);
-    filterLayout->addWidget(stopBtn);
-    mainLayout->addLayout(filterLayout);
-    // 数据包列表
-    packetTable = new QTableWidget(this);
-    packetTable->setColumnCount(8);
-    QStringList headers;
-    headers << "时间" << "源MAC" << "目的MAC" << "类型" << "源IP" << "目的IP" << "协议" << "长度";
-    packetTable->setHorizontalHeaderLabels(headers);
-    packetTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
-    packetTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    mainLayout->addWidget(packetTable, 5);
-    // 下方分区
-    QHBoxLayout *bottomLayout = new QHBoxLayout();
-    protocolTree = new QTreeWidget(this);
-    protocolTree->setHeaderLabel("协议解析树");
-    bottomLayout->addWidget(protocolTree, 2);
-    rawDataEdit = new QPlainTextEdit(this);
-    rawDataEdit->setReadOnly(true);
-    bottomLayout->addWidget(rawDataEdit, 3);
-    mainLayout->addLayout(bottomLayout, 3);
-    setCentralWidget(central);
-}
-
 void MainWindow::onStartCapture() {
     if (captureThread) {
         captureThread->stop();
@@ -179,17 +136,17 @@ void MainWindow::onStartCapture() {
         captureThread = nullptr;
     }
     packetList.clear();
-    packetTable->setRowCount(0);
-    protocolTree->clear();
-    rawDataEdit->clear();
-    QString dev = deviceCombo->currentText();
-    bool promisc = (modeCombo->currentIndex() == 0);
+    ui->packetTable->setRowCount(0);
+    ui->protocolTree->clear();
+    ui->rawDataEdit->clear();
+    QString dev = ui->deviceCombo->currentText();
+    bool promisc = (ui->modeCombo->currentIndex() == 0);
     captureThread = new PacketCaptureThread(this);
     captureThread->setDevice(dev, promisc);
     connect(captureThread, &PacketCaptureThread::packetCaptured, this, &MainWindow::onPacketCaptured);
     captureThread->start();
-    startBtn->setEnabled(false);
-    stopBtn->setEnabled(true);
+    ui->startBtn->setEnabled(false);
+    ui->stopBtn->setEnabled(true);
 }
 
 void MainWindow::onStopCapture() {
@@ -199,8 +156,8 @@ void MainWindow::onStopCapture() {
         delete captureThread;
         captureThread = nullptr;
     }
-    startBtn->setEnabled(true);
-    stopBtn->setEnabled(false);
+    ui->startBtn->setEnabled(true);
+    ui->stopBtn->setEnabled(false);
 }
 
 void MainWindow::onPacketCaptured(const QByteArray &data, const struct pcap_pkthdr *header) {
@@ -247,16 +204,16 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
         info.protocol = "Other";
     }
     if (!filterPacket(info)) return;
-    int row = packetTable->rowCount();
-    packetTable->insertRow(row);
-    packetTable->setItem(row, 0, new QTableWidgetItem(info.time));
-    packetTable->setItem(row, 1, new QTableWidgetItem(info.srcMac));
-    packetTable->setItem(row, 2, new QTableWidgetItem(info.dstMac));
-    packetTable->setItem(row, 3, new QTableWidgetItem(info.ethType));
-    packetTable->setItem(row, 4, new QTableWidgetItem(info.srcIp));
-    packetTable->setItem(row, 5, new QTableWidgetItem(info.dstIp));
-    packetTable->setItem(row, 6, new QTableWidgetItem(info.protocol));
-    packetTable->setItem(row, 7, new QTableWidgetItem(QString::number(data.size())));
+    int row = ui->packetTable->rowCount();
+    ui->packetTable->insertRow(row);
+    ui->packetTable->setItem(row, 0, new QTableWidgetItem(info.time));
+    ui->packetTable->setItem(row, 1, new QTableWidgetItem(info.srcMac));
+    ui->packetTable->setItem(row, 2, new QTableWidgetItem(info.dstMac));
+    ui->packetTable->setItem(row, 3, new QTableWidgetItem(info.ethType));
+    ui->packetTable->setItem(row, 4, new QTableWidgetItem(info.srcIp));
+    ui->packetTable->setItem(row, 5, new QTableWidgetItem(info.dstIp));
+    ui->packetTable->setItem(row, 6, new QTableWidgetItem(info.protocol));
+    ui->packetTable->setItem(row, 7, new QTableWidgetItem(QString::number(data.size())));
     packetList.append(info);
 }
 
@@ -268,8 +225,8 @@ void MainWindow::onPacketTableClicked(int row, int /*column*/) {
 }
 
 void MainWindow::updateProtocolTree(const PacketInfo &info) {
-    protocolTree->clear();
-    QTreeWidgetItem *eth = new QTreeWidgetItem(protocolTree, QStringList() << "以太网头部");
+    ui->protocolTree->clear();
+    QTreeWidgetItem *eth = new QTreeWidgetItem(ui->protocolTree, QStringList() << "以太网头部");
     eth->addChild(new QTreeWidgetItem(QStringList() << ("源MAC: " + info.srcMac)));
     eth->addChild(new QTreeWidgetItem(QStringList() << ("目的MAC: " + info.dstMac)));
     eth->addChild(new QTreeWidgetItem(QStringList() << ("类型: " + info.ethType)));
@@ -284,7 +241,7 @@ void MainWindow::updateProtocolTree(const PacketInfo &info) {
             trans->addChild(new QTreeWidgetItem(QStringList() << ("目的端口: " + info.dstPort)));
         }
     }
-    protocolTree->expandAll();
+    ui->protocolTree->expandAll();
 }
 
 void MainWindow::updateRawDataView(const QByteArray &data, int, int) {
@@ -300,42 +257,42 @@ void MainWindow::updateRawDataView(const QByteArray &data, int, int) {
         ascii += (c >= 32 && c <= 126) ? c : '.';
     }
     if (!ascii.isEmpty()) hex += QString("  %1").arg(ascii);
-    rawDataEdit->setPlainText(hex);
+    ui->rawDataEdit->setPlainText(hex);
 }
 
 bool MainWindow::filterPacket(const PacketInfo &info) {
     // MAC过滤
-    QString macFilter = macFilterEdit->text().trimmed().toUpper();
+    QString macFilter = ui->macFilterEdit->text().trimmed().toUpper();
     if (!macFilter.isEmpty() && info.srcMac != macFilter && info.dstMac != macFilter) return false;
     // 类型过滤
-    QString ethTypeFilter = ethTypeFilterEdit->text().trimmed().toUpper();
+    QString ethTypeFilter = ui->ethTypeFilterEdit->text().trimmed().toUpper();
     if (!ethTypeFilter.isEmpty() && info.ethType != ethTypeFilter) return false;
     // IP过滤
-    QString ipFilter = ipFilterEdit->text().trimmed();
+    QString ipFilter = ui->ipFilterEdit->text().trimmed();
     if (!ipFilter.isEmpty() && info.srcIp != ipFilter && info.dstIp != ipFilter) return false;
     // 协议过滤
-    QString protoFilter = protoFilterEdit->text().trimmed().toUpper();
+    QString protoFilter = ui->protoFilterEdit->text().trimmed().toUpper();
     if (!protoFilter.isEmpty() && info.protocol.toUpper() != protoFilter) return false;
     // 端口过滤
-    QString portFilter = portFilterEdit->text().trimmed();
+    QString portFilter = ui->portFilterEdit->text().trimmed();
     if (!portFilter.isEmpty() && info.srcPort != portFilter && info.dstPort != portFilter) return false;
     return true;
 }
 
 void MainWindow::onFilterChanged() {
-    packetTable->setRowCount(0);
+    ui->packetTable->setRowCount(0);
     for (const PacketInfo &info : packetList) {
         if (filterPacket(info)) {
-            int row = packetTable->rowCount();
-            packetTable->insertRow(row);
-            packetTable->setItem(row, 0, new QTableWidgetItem(info.time));
-            packetTable->setItem(row, 1, new QTableWidgetItem(info.srcMac));
-            packetTable->setItem(row, 2, new QTableWidgetItem(info.dstMac));
-            packetTable->setItem(row, 3, new QTableWidgetItem(info.ethType));
-            packetTable->setItem(row, 4, new QTableWidgetItem(info.srcIp));
-            packetTable->setItem(row, 5, new QTableWidgetItem(info.dstIp));
-            packetTable->setItem(row, 6, new QTableWidgetItem(info.protocol));
-            packetTable->setItem(row, 7, new QTableWidgetItem(QString::number(info.rawData.size())));
+            int row = ui->packetTable->rowCount();
+            ui->packetTable->insertRow(row);
+            ui->packetTable->setItem(row, 0, new QTableWidgetItem(info.time));
+            ui->packetTable->setItem(row, 1, new QTableWidgetItem(info.srcMac));
+            ui->packetTable->setItem(row, 2, new QTableWidgetItem(info.dstMac));
+            ui->packetTable->setItem(row, 3, new QTableWidgetItem(info.ethType));
+            ui->packetTable->setItem(row, 4, new QTableWidgetItem(info.srcIp));
+            ui->packetTable->setItem(row, 5, new QTableWidgetItem(info.dstIp));
+            ui->packetTable->setItem(row, 6, new QTableWidgetItem(info.protocol));
+            ui->packetTable->setItem(row, 7, new QTableWidgetItem(QString::number(info.rawData.size())));
         }
     }
 }
