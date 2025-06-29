@@ -138,6 +138,9 @@ MainWindow::MainWindow(QWidget *parent)
     QFont monoFont("Consolas");
     monoFont.setStyleHint(QFont::Monospace);
     ui->rawDataEdit->setFont(monoFont);
+
+    // 启动时最大化窗口
+    this->showMaximized();
 }
 
 MainWindow::~MainWindow() {
@@ -1780,5 +1783,23 @@ void MainWindow::onFilterChanged() {
             ui->packetTable->setItem(row, 8, new QTableWidgetItem(QString::number(info.rawData.size())));
             ui->packetTable->setItem(row, 9, new QTableWidgetItem(info.info));
         }
+    }
+}
+
+void MainWindow::resizeEvent(QResizeEvent *event)
+{
+    QMainWindow::resizeEvent(event);
+    // 动态调整packetTable所有列宽
+    int tableWidth = ui->packetTable->viewport()->width();
+    int columnCount = ui->packetTable->columnCount();
+    if (columnCount == 0) return;
+    // 比例分配每列宽度（可根据实际需求调整比例）
+    // 这里按初始宽度比例分配
+    QVector<int> initWidths = {60, 100, 150, 150, 80, 120, 120, 80, 60, 300};
+    int totalInit = 0;
+    for (int w : initWidths) totalInit += w;
+    for (int i = 0; i < columnCount && i < initWidths.size(); ++i) {
+        int colWidth = tableWidth * initWidths[i] / totalInit;
+        ui->packetTable->setColumnWidth(i, colWidth);
     }
 }

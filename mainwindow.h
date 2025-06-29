@@ -15,6 +15,7 @@
 #include <QByteArray>
 #include <QMap>
 #include <QPair>
+#include <QResizeEvent>
 extern "C" {
 #include <pcap.h>
 }
@@ -104,6 +105,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void onStartCapture();
