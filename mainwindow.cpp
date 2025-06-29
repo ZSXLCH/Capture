@@ -204,18 +204,37 @@ QString MainWindow::ipToString(const uchar *ip) {
 // 解析应用层协议
 QString MainWindow::parseApplicationProtocol(const QByteArray &data, int offset, quint16 srcPort, quint16 dstPort, PacketInfo &info) {
     // HTTP (端口 80, 8080)
+    static const QList<QByteArray> httpMethods = {"GET ", "POST", "HTTP", "HEAD", "PUT ", "OPTI", "DELE", "PATC", "TRAC", "CONN"};
     if (srcPort == 80 || dstPort == 80 || srcPort == 8080 || dstPort == 8080) {
         if (data.size() > offset + 4) {
             QByteArray header = data.mid(offset, 4);
-            if (header == "GET " || header == "POST" || header == "HTTP" || header == "HEAD" || header == "PUT ") {
-                return "HTTP";
+            bool isHttp = false;
+            for (const auto &method : httpMethods) {
+                if (header.startsWith(method)) {
+                    isHttp = true;
+                    break;
+                }
             }
+            // 响应行：HTTP/1.x 20x/30x/40x/50x
+            if (!isHttp && data.size() > offset + 8) {
+                QByteArray resp = data.mid(offset, 5);
+                if (resp == "HTTP/") isHttp = true;
+            }
+            if (isHttp) return "HTTP";
         }
     }
 
-    // HTTPS
+    // HTTPS/TLS (端口 443)
     if (srcPort == 443 || dstPort == 443) {
-        return "HTTPS/TLS";
+        // TLS ClientHello/ServerHello通常以0x16开头，且长度大于5
+        if (data.size() > offset + 5) {
+            const uchar *tls = (const uchar*)data.constData() + offset;
+            if (tls[0] == 0x16 && (tls[1] == 0x03) && (tls[2] >= 0x00 && tls[2] <= 0x03)) {
+                // 0x16: Handshake, 0x03 0x01/0x02/0x03: TLS version
+                return "HTTPS/TLS";
+            }
+        }
+        // 其它情况不标记为HTTPS/TLS，避免误判
     }
 
     // DNS (端口 53)
@@ -290,6 +309,7 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
     if (ethType == 0x0800 && data.size() >= ipOffset+20) { // IPv4
         const uchar *ip = d + ipOffset;
         int ipHeaderLen = (ip[0]&0x0F)*4;
+        if (data.size() < ipOffset + ipHeaderLen) return; // IP头部长度检查
         info.srcIp = ipToString(ip + 12);
         info.dstIp = ipToString(ip + 16);
         quint8 proto = ip[9];
@@ -318,11 +338,12 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
 
         if (proto == 6 && data.size() >= transportOffset + 20) { // TCP
             const uchar *tcp = d + transportOffset;
+            int tcpHeaderLen = (tcp[12]>>4) * 4;
+            if (data.size() < transportOffset + tcpHeaderLen) return; // TCP头部长度检查
             quint16 srcPort = (tcp[0]<<8)|tcp[1];
             quint16 dstPort = (tcp[2]<<8)|tcp[3];
             info.srcPort = QString::number(srcPort);
             info.dstPort = QString::number(dstPort);
-            int tcpHeaderLen = (tcp[12]>>4) * 4;
 
             // 存储TCP层字段位置
             info.fields["tcp_header"] = {transportOffset, tcpHeaderLen, LAYER_TRANSPORT};
@@ -346,6 +367,7 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
 
         } else if (proto == 17 && data.size() >= transportOffset + 8) { // UDP
             const uchar *udp = d + transportOffset;
+            if (data.size() < transportOffset + 8) return; // UDP头部长度检查
             quint16 srcPort = (udp[0]<<8)|udp[1];
             quint16 dstPort = (udp[2]<<8)|udp[3];
             info.srcPort = QString::number(srcPort);
@@ -367,6 +389,7 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
                 }
             }
         } else if (proto == 1 && data.size() >= transportOffset + 8) { // ICMP
+            if (data.size() < transportOffset + 8) return; // ICMP头部长度检查
             info.fields["icmp_header"] = {transportOffset, 8, LAYER_TRANSPORT};
             info.fields["icmp_type"] = {transportOffset, 1, LAYER_TRANSPORT};
             info.fields["icmp_code"] = {transportOffset + 1, 1, LAYER_TRANSPORT};
@@ -374,6 +397,7 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
             info.fields["icmp_data"] = {transportOffset + 4, 4, LAYER_TRANSPORT};
         }
     } else if (ethType == 0x0806 && data.size() >= ipOffset+28) { // ARP
+        if (data.size() < ipOffset + 28) return; // ARP长度检查
         info.protocol = "ARP";
         info.fields["arp_packet"] = {ipOffset, 28, LAYER_IP};
         info.fields["arp_htype"] = {ipOffset, 2, LAYER_IP};
@@ -386,6 +410,7 @@ void MainWindow::parseAndDisplayPacket(const QByteArray &data, const struct pcap
         info.fields["arp_tha"] = {ipOffset + 18, 6, LAYER_IP};
         info.fields["arp_tpa"] = {ipOffset + 24, 4, LAYER_IP};
     } else if (ethType == 0x86DD && data.size() >= ipOffset+40) { // IPv6
+        if (data.size() < ipOffset + 40) return; // IPv6头部长度检查
         info.protocol = "IPv6";
         info.fields["ipv6_header"] = {ipOffset, 40, LAYER_IP};
     } else {
@@ -826,6 +851,11 @@ void MainWindow::updateProtocolTree(const PacketInfo &info) {
                 parseDNS(info.rawData, info.fields["app_data"].offset, const_cast<PacketInfo&>(info), app);
             } else if (info.appProtocol == "DHCP") {
                 parseDHCP(info.rawData, info.fields["app_data"].offset, const_cast<PacketInfo&>(info), app);
+            } else if (info.appProtocol == "HTTPS/TLS") {
+                // 简单显示TLS提示
+                ProtocolTreeItem *tlsInfo = new ProtocolTreeItem(QStringList() << "TLS/SSL数据 (未详细解析)");
+                tlsInfo->setFieldInfo(info.fields["app_data"].offset, info.fields["app_data"].length, LAYER_APPLICATION);
+                app->addChild(tlsInfo);
             }
 
             ui->protocolTree->addTopLevelItem(app);
