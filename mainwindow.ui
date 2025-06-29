@@ -92,6 +92,11 @@
       <widget class="QTableWidget" name="packetTable">
        <column>
         <property name="text">
+         <string>序号</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
          <string>时间</string>
         </property>
        </column>
@@ -128,6 +133,11 @@
        <column>
         <property name="text">
          <string>长度</string>
+        </property>
+       </column>
+       <column>
+        <property name="text">
+         <string>信息</string>
         </property>
        </column>
       </widget>

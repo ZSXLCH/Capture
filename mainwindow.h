@@ -53,7 +53,9 @@ struct PacketInfo {
     QString srcPort;
     QString dstPort;
     QString appProtocol;  // 应用层协议
-    QMap<QString, ProtocolField> fields; // 协议字段映射
+    QString info;         // 信息列，显示数据包详细信息
+    int originalIndex;    // 原始索引，用于过滤后保持序号
+    QMap<QString, ProtocolField> fields; // 协议字段映射，用于高亮
 };
 
 // 抓包线程
@@ -77,7 +79,7 @@ signals:
     void packetCaptured(const QByteArray &data, const struct pcap_pkthdr *header);
 };
 
-// 扩展的QTreeWidgetItem，存储协议字段信息
+// 扩展的QTreeWidgetItem，存储协议字段信息以便高亮
 class ProtocolTreeItem : public QTreeWidgetItem {
 public:
     ProtocolTreeItem(const QStringList &strings) : QTreeWidgetItem(strings) {}
@@ -113,39 +115,42 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    QTableWidget *packetTable;
-    QTreeWidget *protocolTree;
-    QPlainTextEdit *rawDataEdit;
-    QComboBox *deviceCombo;
-    QComboBox *modeCombo;
-    QLineEdit *macFilterEdit;
-    QLineEdit *ethTypeFilterEdit;
-    QLineEdit *ipFilterEdit;
-    QLineEdit *protoFilterEdit;
-    QLineEdit *portFilterEdit;
-    QPushButton *startBtn;
-    QPushButton *stopBtn;
-
     PacketCaptureThread *captureThread;
     QVector<PacketInfo> packetList;
-    int currentPacketIndex = -1;  // 当前选中的数据包索引
+    QMap<int, int> rowToPacketIndex;  // 表格行号到数据包索引的映射
+    int currentPacketIndex = -1;  // 当前在表格中选中的数据包索引
 
+    // UI初始化和更新
     void setupUI();
-    void parseAndDisplayPacket(const QByteArray &data, const struct pcap_pkthdr *header);
     void updateProtocolTree(const PacketInfo &info);
-    void updateRawDataView(const QByteArray &data, int highlightStart = -1, int highlightLen = 0, ProtocolLayer layer = LAYER_ETHERNET);
-    bool filterPacket(const PacketInfo &info);
+    void updateRawDataView(const QByteArray &data, int highlightStart = -1, int highlightLen = 0);
+
+    // --- 协议解析核心函数 ---
+    void parseAndDisplayPacket(const QByteArray &data);
+
+    // 各层协议解析函数
+    int parseEthernet(const QByteArray &data, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseArp(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseIpV4(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseIpV6(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseIcmp(const QByteArray &data, int offset, int len, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseTcp(const QByteArray &data, int offset, int len, PacketInfo &info, ProtocolTreeItem *parent);
+    int parseUdp(const QByteArray &data, int offset, int len, PacketInfo &info, ProtocolTreeItem *parent);
 
     // 应用层协议解析
-    QString parseApplicationProtocol(const QByteArray &data, int offset, quint16 srcPort, quint16 dstPort, PacketInfo &info);
-    void parseHTTP(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
-    void parseDNS(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
-    void parseDHCP(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    void parseApplicationLayer(const QByteArray &data, int offset, int len, quint16 srcPort, quint16 dstPort, PacketInfo &info, ProtocolTreeItem *parent);
+    void parseHTTP(const QByteArray &data, int offset, int len, ProtocolTreeItem *parent);
+    void parseDNS(const QByteArray &data, int offset, int len, ProtocolTreeItem *parent);
+    void parseDHCP(const QByteArray &data, int offset, int len, ProtocolTreeItem *parent);
+    void parseDhcpOptions(const QByteArray &data, int offset, int len, ProtocolTreeItem *parent);
 
-    // 辅助函数
+    // --- 辅助函数 ---
+    bool filterPacket(const PacketInfo &info);
     QString getFriendlyDeviceName(const QString &devName);
     QString ipToString(const uchar *ip);
+    QString ipv6ToString(const uchar *ipv6);
     QString macToString(const uchar *mac);
+    QString parseDnsName(const QByteArray &data, int &offset, int baseOffset);
 };
 
 #endif // MAINWINDOW_H
