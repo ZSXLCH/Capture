@@ -13,6 +13,8 @@
 #include <QVector>
 #include <QString>
 #include <QByteArray>
+#include <QMap>
+#include <QPair>
 extern "C" {
 #include <pcap.h>
 }
@@ -22,6 +24,21 @@ namespace Ui {
 class MainWindow;
 }
 QT_END_NAMESPACE
+
+// 协议层定义
+enum ProtocolLayer {
+    LAYER_ETHERNET = 0,
+    LAYER_IP,
+    LAYER_TRANSPORT,
+    LAYER_APPLICATION
+};
+
+// 协议字段信息
+struct ProtocolField {
+    int offset;     // 在数据包中的偏移
+    int length;     // 字段长度
+    ProtocolLayer layer;  // 所属层
+};
 
 // 数据包结构体
 struct PacketInfo {
@@ -35,6 +52,8 @@ struct PacketInfo {
     QString protocol;
     QString srcPort;
     QString dstPort;
+    QString appProtocol;  // 应用层协议
+    QMap<QString, ProtocolField> fields; // 协议字段映射
 };
 
 // 抓包线程
@@ -58,6 +77,24 @@ signals:
     void packetCaptured(const QByteArray &data, const struct pcap_pkthdr *header);
 };
 
+// 扩展的QTreeWidgetItem，存储协议字段信息
+class ProtocolTreeItem : public QTreeWidgetItem {
+public:
+    ProtocolTreeItem(const QStringList &strings) : QTreeWidgetItem(strings) {}
+    void setFieldInfo(int offset, int length, ProtocolLayer layer) {
+        fieldOffset = offset;
+        fieldLength = length;
+        fieldLayer = layer;
+    }
+    int getFieldOffset() const { return fieldOffset; }
+    int getFieldLength() const { return fieldLength; }
+    ProtocolLayer getFieldLayer() const { return fieldLayer; }
+private:
+    int fieldOffset = -1;
+    int fieldLength = 0;
+    ProtocolLayer fieldLayer = LAYER_ETHERNET;
+};
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -71,6 +108,7 @@ private slots:
     void onStopCapture();
     void onPacketCaptured(const QByteArray &data, const struct pcap_pkthdr *header);
     void onPacketTableClicked(int row, int column);
+    void onProtocolTreeItemClicked(QTreeWidgetItem *item, int column);
     void onFilterChanged();
 
 private:
@@ -91,11 +129,27 @@ private:
     PacketCaptureThread *captureThread;
     QVector<PacketInfo> packetList;
 
+    // 协议层颜色映射
+    QMap<ProtocolLayer, QColor> layerColors;
+
     void setupUI();
+    void initLayerColors();
     void parseAndDisplayPacket(const QByteArray &data, const struct pcap_pkthdr *header);
     void updateProtocolTree(const PacketInfo &info);
-    void updateRawDataView(const QByteArray &data, int highlightStart = -1, int highlightLen = 0);
+    void updateRawDataView(const QByteArray &data, int highlightStart = -1, int highlightLen = 0, ProtocolLayer layer = LAYER_ETHERNET);
+    void updateRawDataViewWithLayers(const PacketInfo &info);
     bool filterPacket(const PacketInfo &info);
+
+    // 应用层协议解析
+    QString parseApplicationProtocol(const QByteArray &data, int offset, quint16 srcPort, quint16 dstPort, PacketInfo &info);
+    void parseHTTP(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    void parseDNS(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+    void parseDHCP(const QByteArray &data, int offset, PacketInfo &info, ProtocolTreeItem *parent);
+
+    // 辅助函数
+    QString getFriendlyDeviceName(const QString &devName);
+    QString ipToString(const uchar *ip);
+    QString macToString(const uchar *mac);
 };
 
 #endif // MAINWINDOW_H
