@@ -128,16 +128,12 @@ private:
 
     PacketCaptureThread *captureThread;
     QVector<PacketInfo> packetList;
-
-    // 协议层颜色映射
-    QMap<ProtocolLayer, QColor> layerColors;
+    int currentPacketIndex = -1;  // 当前选中的数据包索引
 
     void setupUI();
-    void initLayerColors();
     void parseAndDisplayPacket(const QByteArray &data, const struct pcap_pkthdr *header);
     void updateProtocolTree(const PacketInfo &info);
     void updateRawDataView(const QByteArray &data, int highlightStart = -1, int highlightLen = 0, ProtocolLayer layer = LAYER_ETHERNET);
-    void updateRawDataViewWithLayers(const PacketInfo &info);
     bool filterPacket(const PacketInfo &info);
 
     // 应用层协议解析
