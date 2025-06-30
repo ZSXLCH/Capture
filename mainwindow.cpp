@@ -186,6 +186,8 @@ void MainWindow::onStartCapture() {
     captureThread->start();
     ui->startBtn->setEnabled(false);
     ui->stopBtn->setEnabled(true);
+    ui->deviceCombo->setEnabled(false); // 禁用网卡选择
+    ui->modeCombo->setEnabled(false);   // 禁用捕获模式选择
 }
 
 void MainWindow::onStopCapture() {
@@ -197,6 +199,8 @@ void MainWindow::onStopCapture() {
     }
     ui->startBtn->setEnabled(true);
     ui->stopBtn->setEnabled(false);
+    ui->deviceCombo->setEnabled(true); // 恢复网卡选择
+    ui->modeCombo->setEnabled(true);   // 恢复捕获模式选择
 }
 
 void MainWindow::onPacketCaptured(const QByteArray &data, const struct pcap_pkthdr *header) {
