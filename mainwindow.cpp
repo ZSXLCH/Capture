@@ -122,6 +122,18 @@ MainWindow::MainWindow(QWidget *parent)
     ui->packetTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Interactive);
     ui->packetTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
+    // 设置表格样式
+    ui->packetTable->setShowGrid(true);
+    ui->packetTable->setGridStyle(Qt::SolidLine);
+    ui->packetTable->setSelectionBehavior(QAbstractItemView::SelectRows); // 整行选择
+    ui->packetTable->setSelectionMode(QAbstractItemView::SingleSelection); // 单选模式
+    
+    // 设置选中行背景色为灰色
+    QPalette palette = ui->packetTable->palette();
+    palette.setColor(QPalette::Highlight, QColor(128, 128, 128)); // 选中行背景色为灰色
+    palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255));
+    ui->packetTable->setPalette(palette);
+
     // 设置合理的默认列宽
     ui->packetTable->setColumnWidth(0, 60);   // 序号
     ui->packetTable->setColumnWidth(1, 100);  // 时间
@@ -186,6 +198,8 @@ void MainWindow::onStartCapture() {
     captureThread->start();
     ui->startBtn->setEnabled(false);
     ui->stopBtn->setEnabled(true);
+    ui->deviceCombo->setEnabled(false); // 禁用网卡选择
+    ui->modeCombo->setEnabled(false);   // 禁用捕获模式选择
 }
 
 void MainWindow::onStopCapture() {
@@ -197,6 +211,8 @@ void MainWindow::onStopCapture() {
     }
     ui->startBtn->setEnabled(true);
     ui->stopBtn->setEnabled(false);
+    ui->deviceCombo->setEnabled(true); // 恢复网卡选择
+    ui->modeCombo->setEnabled(true);   // 恢复捕获模式选择
 }
 
 void MainWindow::onPacketCaptured(const QByteArray &data, const struct pcap_pkthdr *header) {
