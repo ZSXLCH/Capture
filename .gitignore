@@ -1,1 +1,3 @@
 build/
+# CMake 用户配置文件
+*.user
