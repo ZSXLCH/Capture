@@ -24,6 +24,13 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(WireWhale
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        PacketCaptureThread/packetcapturethread.cpp
+        ProtocolParse/protocolparser.cpp
+        ProtocolTreeItem/protocoltreeitem.cpp
+        PacketCaptureThread/packetcapturethread.h
+        PacketInfo/packetinfo.h
+        ProtocolParse/protocolparser.h
+        ProtocolTreeItem/protocoltreeitem.h
     )
 else()
     add_executable(WireWhale ${PROJECT_SOURCES})
